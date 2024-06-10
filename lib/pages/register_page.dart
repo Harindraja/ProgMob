@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:modernlogintute/components/my_button.dart';
 import 'package:modernlogintute/components/my_textfield.dart';
 import 'package:modernlogintute/components/square_tile.dart';
@@ -6,17 +8,48 @@ import 'package:modernlogintute/components/square_tile.dart';
 class RegisterPage extends StatelessWidget {
   RegisterPage({Key? key}) : super(key: key);
 
-  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
-  void registerUser() {
-    // Implement your user registration logic here
+  final Dio dio = Dio(); // Inisialisasi Dio
+
+  void registerUser(BuildContext context) async {
+    String name = nameController.text.trim();
+    String email = emailController.text.trim();
+    String password = passwordController.text.trim();
+
+    try {
+      // Kirim permintaan POST ke endpoint register
+      final response = await dio.post('https://mobileapis.manpits.xyz/api/register', data: {
+        'name': name,
+        'email': email,
+        'password': password,
+      });
+
+      // Jika berhasil, simpan data ke SharedPreferences
+      if (response.statusCode == 200) {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('name', name);
+        await prefs.setString('email', email);
+
+        // Navigasi ke halaman berikutnya atau tampilkan pesan sukses
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Registration successful!')),
+        );
+      }
+    } on DioError catch (e) {
+      // Tangani jika terjadi error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.response?.statusCode} - ${e.response?.data}')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color.fromARGB(255, 0, 0, 0),
+      backgroundColor: Colors.white, // Set background color to white
       body: Stack(
         children: [
           Positioned(
@@ -34,7 +67,6 @@ class RegisterPage extends StatelessWidget {
               ),
             ),
           ),
-
           Positioned(
             height: 140,
             top: 0,
@@ -52,7 +84,6 @@ class RegisterPage extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     SizedBox(height: 50),
-
                     SizedBox(
                       height: 180,
                       child: Image(
@@ -60,39 +91,36 @@ class RegisterPage extends StatelessWidget {
                       ),
                     ),
                     SizedBox(height: 25),
-
                     Text(
                       'IT-ESEGA 2024',
                       style: TextStyle(
-                        color: Color.fromARGB(255, 0, 0, 0),
+                        color: Colors.black,
                         fontSize: 26,
                       ),
                     ),
-
                     SizedBox(height: 25),
-
                     MyTextField(
-                      controller: usernameController,
-                      hintText: 'Username',
+                      controller: nameController,
+                      hintText: 'Name',
                       obscureText: false,
                     ),
-
                     SizedBox(height: 10),
-
+                    MyTextField(
+                      controller: emailController,
+                      hintText: 'Email',
+                      obscureText: false,
+                    ),
+                    SizedBox(height: 10),
                     MyTextField(
                       controller: passwordController,
                       hintText: 'Password',
                       obscureText: true,
                     ),
-
                     SizedBox(height: 25),
-
                     MyButton(
-                      onTap: registerUser,
+                      onTap: () => registerUser(context),
                     ),
-
                     SizedBox(height: 50),
-
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 25.0),
                       child: Row(
@@ -107,7 +135,7 @@ class RegisterPage extends StatelessWidget {
                             padding: EdgeInsets.symmetric(horizontal: 10.0),
                             child: Text(
                               'Or continue with',
-                              style: TextStyle(color: Color.fromARGB(255, 0, 0, 0)),
+                              style: TextStyle(color: Colors.black),
                             ),
                           ),
                           Expanded(
@@ -119,26 +147,18 @@ class RegisterPage extends StatelessWidget {
                         ],
                       ),
                     ),
-
                     SizedBox(height: 50),
-
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         SquareTile(imagePath: 'lib/images/google.png'),
-
                         SizedBox(width: 25),
-
                         SquareTile(imagePath: 'lib/images/facebook.png'),
-
                         SizedBox(width: 25),
-
                         SquareTile(imagePath: 'lib/images/twitter.png')
                       ],
                     ),
-
                     SizedBox(height: 50),
-
                     GestureDetector(
                       onTap: () {
                         Navigator.pop(context);

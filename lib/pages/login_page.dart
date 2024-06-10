@@ -1,44 +1,58 @@
 import 'package:flutter/material.dart';
-import 'package:modernlogintute/components/my_button.dart';
 import 'package:modernlogintute/components/my_textfield.dart';
 import 'package:modernlogintute/components/square_tile.dart';
 import 'package:modernlogintute/pages/register_page.dart';
-import 'member_page.dart'; // Import the member page
+import 'member_page.dart';
+import 'package:get_storage/get_storage.dart';
+import 'package:dio/dio.dart';
 
 class LoginPage extends StatelessWidget {
-  LoginPage({Key? key}) : super(key: key);
+  LoginPage({
+    Key? key,
+    required this.dio,
+    required this.storage,
+    required this.apiUrl,
+  }) : super(key: key);
+
+  final Dio dio;
+  final GetStorage storage;
+  final String apiUrl;
 
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
-  void signUserIn(BuildContext context) {
-    String username = usernameController.text.trim();
+  void goLogin(BuildContext context) async {
+    String email = usernameController.text.trim();
     String password = passwordController.text.trim();
 
-    if (username == "haris" && password == "123") {
-      // Navigate to the member page
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => MemberPage()),
-      );
-    } else {
-      // Show error message for invalid credentials
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text("Error"),
-            content: Text("Invalid username or password."),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: Text("OK"),
-              ),
-            ],
-          );
+    try {
+      final response = await dio.post(
+        '$apiUrl/login',
+        data: {
+          'email': email,
+          'password': password,
         },
+      );
+
+      // Simpan token ke GetStorage
+      if (response.statusCode == 200 && response.data['data']['token'] != null) {
+        storage.write('token', response.data['data']['token']);
+        
+        // Navigasi ke halaman member
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => MemberPage()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Login failed')),
+        );
+      }
+      print(response.data);
+    } on DioException catch (e) {
+      print('${e.response} - ${e.response?.statusCode}');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.response?.statusCode}')),
       );
     }
   }
@@ -46,7 +60,7 @@ class LoginPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color.fromARGB(255, 0, 0, 0),
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
           Positioned(
@@ -91,14 +105,14 @@ class LoginPage extends StatelessWidget {
                     Text(
                       'IT-ESEGA 2024',
                       style: TextStyle(
-                        color: Color.fromARGB(255, 0, 0, 0),
+                        color: Colors.black,
                         fontSize: 26,
                       ),
                     ),
                     SizedBox(height: 25),
                     MyTextField(
                       controller: usernameController,
-                      hintText: 'Username',
+                      hintText: 'Email',
                       obscureText: false,
                     ),
                     SizedBox(height: 10),
@@ -108,8 +122,11 @@ class LoginPage extends StatelessWidget {
                       obscureText: true,
                     ),
                     SizedBox(height: 25),
-                    MyButton(
-                      onTap: () => signUserIn(context),
+                    ElevatedButton(
+                      onPressed: () {
+                        goLogin(context);
+                      },
+                      child: const Text('Login'),
                     ),
                     SizedBox(height: 50),
                     Padding(
@@ -126,7 +143,7 @@ class LoginPage extends StatelessWidget {
                             padding: EdgeInsets.symmetric(horizontal: 10.0),
                             child: Text(
                               'Or continue with',
-                              style: TextStyle(color: Color.fromARGB(255, 0, 0, 0)),
+                              style: TextStyle(color: Colors.black),
                             ),
                           ),
                           Expanded(
